@@ -2,7 +2,7 @@
 
 ## 📝 Functionality
 
-Basically, this mod makes the walls you go near become unanchored.
+Basically, this mod makes the walls you look at become unanchored.
 
 ## 📜 License
 
