@@ -18,13 +18,10 @@ public class PlayerManager_Update_Patch
 
     private static void Postfix(PlayerManager __instance)
     {
-        if (Singleton<CoreGameManager>.Instance == null ||
-            __instance.ec == null ||
-            __instance.pc == null)
+        if (Singleton<CoreGameManager>.Instance == null || __instance.ec == null || __instance.pc == null)
             return;
 
-        GameCamera gameCamera =
-            Singleton<CoreGameManager>.Instance.GetCamera(__instance.playerNumber);
+        GameCamera gameCamera = Singleton<CoreGameManager>.Instance.GetCamera(__instance.playerNumber);
 
         if (gameCamera == null || gameCamera.camCom == null)
             return;
@@ -41,8 +38,7 @@ public class PlayerManager_Update_Patch
                 QueryTriggerInteraction.Ignore))
             return;
 
-        if (hit.collider.GetComponentInParent<UnhingedPhysicsWall>() != null ||
-            !HasTagInHierarchy(hit.collider.transform, "Wall"))
+        if (hit.collider.GetComponentInParent<UnhingedPhysicsWall>() != null || !HasTagInHierarchy(hit.collider.transform, "Wall"))
             return;
 
         Transform originalWall = hit.collider.transform;
@@ -54,8 +50,7 @@ public class PlayerManager_Update_Patch
             return;
 
         EnvironmentController ec = __instance.ec;
-        Direction direction =
-            Directions.DirFromVector3(hit.transform.forward, 5f);
+        Direction direction = Directions.DirFromVector3(hit.transform.forward, 5f);
 
         Vector3 normal = direction.ToVector3();
         normal.y = 0f;
@@ -63,44 +58,32 @@ public class PlayerManager_Update_Patch
         if (normal.sqrMagnitude > 0.001f)
             normal.Normalize();
 
-        IntVector2 currentPosition =
-            IntVector2.GetGridPosition(hit.transform.position - normal * 5f);
+        IntVector2 currentPosition = IntVector2.GetGridPosition(hit.transform.position - normal * 5f);
 
         if (!ec.ContainsCoordinates(currentPosition))
             return;
 
         Cell currentCell = ec.CellFromPosition(currentPosition);
 
-        if (currentCell == null ||
-            currentCell.Null ||
-            !currentCell.HasWallInDirection(direction))
+        if (currentCell == null || currentCell.Null || !currentCell.HasWallInDirection(direction))
             return;
 
         GameObject hitObject = originalWall.gameObject;
 
-        if (hitObject == lastProcessedObject &&
-            Time.time - lastProcessTime < 0.2f)
+        if (hitObject == lastProcessedObject && Time.time - lastProcessTime < 0.2f)
             return;
 
         lastProcessedObject = hitObject;
         lastProcessTime = Time.time;
 
-        IntVector2 otherPosition =
-            currentPosition + direction.ToIntVector2();
+        IntVector2 otherPosition = currentPosition + direction.ToIntVector2();
 
         ec.ConnectCells(currentCell.position, direction);
         UpdateMap(ec, currentCell, otherPosition);
-        SpawnUnhingedWall(
-            ec,
-            currentCell,
-            direction,
-            cam,
-            originalWall);
+        SpawnUnhingedWall(ec, currentCell, direction, cam, originalWall);
     }
 
-    private static bool HasTagInHierarchy(
-        Transform transform,
-        string tag)
+    private static bool HasTagInHierarchy(Transform transform, string tag)
     {
         while (transform != null)
         {
@@ -113,16 +96,12 @@ public class PlayerManager_Update_Patch
         return false;
     }
 
-    private static void UpdateMap(
-        EnvironmentController ec,
-        Cell currentCell,
-        IntVector2 otherPosition)
+    private static void UpdateMap(EnvironmentController ec, Cell currentCell, IntVector2 otherPosition)
     {
         Map map = ec.map;
 
         if (map == null)
-            map = Singleton<CoreGameManager>.Instance
-                .GetComponentInChildren<Map>();
+            map = Singleton<CoreGameManager>.Instance.GetComponentInChildren<Map>();
 
         if (map == null)
             return;
@@ -133,26 +112,17 @@ public class PlayerManager_Update_Patch
             UpdateMapCell(map, ec, otherPosition);
     }
 
-    private static void UpdateMapCell(
-        Map map,
-        EnvironmentController ec,
-        IntVector2 position)
+    private static void UpdateMapCell(Map map, EnvironmentController ec, IntVector2 position)
     {
         if (!ec.ContainsCoordinates(position))
             return;
 
         Cell cell = ec.CellFromPosition(position);
 
-        if (cell == null ||
-            cell.Null ||
-            cell.hideFromMap)
+        if (cell == null || cell.Null || cell.hideFromMap)
             return;
 
-        map.UpdateTile(
-            position.x,
-            position.z,
-            cell.ConstBin,
-            cell.room);
+        map.UpdateTile(position.x, position.z, cell.ConstBin, cell.room);
     }
 
     private static void SpawnUnhingedWall(
@@ -162,66 +132,44 @@ public class PlayerManager_Update_Patch
         Transform camera,
         Transform originalWall)
     {
-        if (currentCell == null ||
-            currentCell.Tile == null ||
-            originalWall == null)
-        {
+        if (currentCell == null || currentCell.Tile == null || originalWall == null)
             return;
-        }
 
         Tile tile = currentCell.Tile;
 
-        GameObject wall =
-            GameObject.CreatePrimitive(PrimitiveType.Cube);
-
+        GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
         wall.name = "UnhingedPhysicsWall";
         wall.AddComponent<UnhingedPhysicsWall>();
 
         SetWallAtlasUVs(wall);
 
-        MeshRenderer renderer =
-            wall.GetComponent<MeshRenderer>();
+        MeshRenderer renderer = wall.GetComponent<MeshRenderer>();
 
         if (tile.MeshRenderer != null)
         {
-            renderer.sharedMaterials =
-                tile.MeshRenderer.sharedMaterials;
+            renderer.sharedMaterials = tile.MeshRenderer.sharedMaterials;
 
-            MaterialPropertyBlock propBlock =
-                new MaterialPropertyBlock();
-
+            MaterialPropertyBlock propBlock = new MaterialPropertyBlock();
             tile.MeshRenderer.GetPropertyBlock(propBlock);
             renderer.SetPropertyBlock(propBlock);
         }
 
-        wall.transform.localScale =
-            new Vector3(10f, 10f, 2.5f);
+        wall.transform.localScale = new Vector3(10f, 10f, 2.5f);
+        wall.transform.position = originalWall.position;
+        wall.transform.rotation = originalWall.rotation;
 
-        wall.transform.position =
-            originalWall.position;
-
-        wall.transform.rotation =
-            originalWall.rotation;
-
-        BoxCollider boxCollider =
-            wall.GetComponent<BoxCollider>();
-
+        BoxCollider boxCollider = wall.GetComponent<BoxCollider>();
         if (boxCollider != null)
             Object.Destroy(boxCollider);
 
-        MeshCollider meshCollider =
-            wall.AddComponent<MeshCollider>();
-
+        MeshCollider meshCollider = wall.AddComponent<MeshCollider>();
         meshCollider.convex = true;
 
-        Rigidbody rb =
-            wall.AddComponent<Rigidbody>();
-
+        Rigidbody rb = wall.AddComponent<Rigidbody>();
         rb.mass = 20f;
         rb.useGravity = true;
         rb.isKinematic = false;
-        rb.constraints =
-            RigidbodyConstraints.FreezePositionY;
+        rb.constraints = RigidbodyConstraints.FreezePositionY;
 
         Vector3 forceDirection = camera.forward;
         forceDirection.y = 0f;
@@ -229,14 +177,12 @@ public class PlayerManager_Update_Patch
         if (forceDirection.sqrMagnitude > 0.001f)
         {
             forceDirection.Normalize();
-
-            rb.AddForce(
-                forceDirection * 8f,
-                ForceMode.Impulse);
+            rb.AddForce(forceDirection * 8f, ForceMode.Impulse);
         }
 
         Physics.SyncTransforms();
     }
+
     private static void SetWallAtlasUVs(GameObject wall)
     {
         MeshFilter meshFilter = wall.GetComponent<MeshFilter>();
@@ -260,7 +206,6 @@ public class PlayerManager_Update_Patch
 
         mesh.uv = uvs;
     }
-
 }
 
 public class UnhingedPhysicsWall : MonoBehaviour
